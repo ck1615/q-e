@@ -53,7 +53,7 @@ SUBROUTINE sym_dns (ldim, npe, irr, dns)
      IF (.NOT.is_hubbard(nt)) CYCLE
      DO n = 1, upf(nt)%nwfc  
         l = upf(nt)%lchi(n)
-        IF (upf(nt)%oc(n) > 0.d0 .AND. l == Hubbard_l(nt)) &
+        IF (upf(nt)%oc(n) > 0.d0) &
            counter = counter + 2 * l + 1  
      ENDDO
   ENDDO

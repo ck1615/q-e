@@ -31,7 +31,8 @@ FUNCTION set_hubbard_l( psd ) RESULT( hubbard_l )
      ! ... rare earths
      !
      CASE('Ce','Pr','Nd','Pm','Sm','Eu','Gd','Tb','Dy','Ho','Er','Tm','Yb','Lu', & 
-          'Th','Pa','U', 'Np','Pu','Am','Cm','Bk','Cf','Es','Fm','Md','No','Lr' )
+          'Th','Pa','U', 'Np','Pu','Am','Cm','Bk','Cf','Es','Fm','Md','No','Lr', &
+          'La' )
         !
         hubbard_l = 3
         !

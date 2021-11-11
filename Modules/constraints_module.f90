@@ -278,6 +278,12 @@ CONTAINS
                CALL set_bennett_proj( ia )
             ENDIF
             !
+        CASE ( 'linear_ionic_constraints' )
+            !
+            ! ... constraint set as a linear combination of atomic coordinates
+            ! ... set equal to 0.
+            constr_type(ia) = 9
+        
          CASE DEFAULT
             !
             CALL errore( 'init_constraint', &

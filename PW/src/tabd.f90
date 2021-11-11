@@ -94,6 +94,9 @@ FUNCTION hubbard_occ( psd )
      CASE( 'Lu', 'Lr' )
         hubbard_occ =14.d0
      !
+     CASE( 'La' )
+        hubbard_occ =0.d0
+     !
      ! OTHER ELEMENTS
      !
      CASE( 'C'  )

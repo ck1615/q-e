@@ -56,7 +56,7 @@ SUBROUTINE offset_atom_wfc( Hubbard_only, l_back, offset, counter )
         IF ( upf(nt)%oc(n) >= 0.D0 ) THEN
            !
            l = upf(nt)%lchi(n)
-           IF (is_hubbard(nt)) hubbard_wfc = ( upf(nt)%oc(n)>0.D0 .AND. l == Hubbard_l(nt) )
+           IF (is_hubbard(nt)) hubbard_wfc = ( l == Hubbard_l(nt) )
            IF (is_hubbard_back(nt)) THEN
               hubbard_wfc_b = ( upf(nt)%oc(n)>0.D0 .AND. l == Hubbard_l_back(nt) ) 
               IF (backall(nt)) THEN

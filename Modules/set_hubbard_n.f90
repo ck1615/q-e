@@ -38,7 +38,8 @@ FUNCTION set_hubbard_n( psd ) RESULT( hubbard_n )
      !
      ! ... rare earths (lanthanoid) 
      !
-     CASE('Ce','Pr','Nd','Pm','Sm','Eu','Gd','Tb','Dy','Ho','Er','Tm','Yb','Lu' ) 
+     CASE('Ce','Pr','Nd','Pm','Sm','Eu','Gd','Tb','Dy','Ho','Er','Tm','Yb','Lu', &
+         'La' ) 
      !  
         hubbard_n = 4 
      !  ... rare earths (actinoids )
