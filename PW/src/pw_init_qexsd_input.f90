@@ -40,6 +40,7 @@
                                 mixing_ndim, tqr, tq_smoothing, tbeta_smoothing, electron_maxstep,                    &
                                 diago_thr_init, diago_full_acc,                                                       & 
                                 diago_cg_maxiter, diago_ppcg_maxiter, diago_david_ndim,                               &
+                                diago_rmm_ndim, diago_rmm_conv, diago_gs_nblock,                                      &
                                 nk1, nk2, nk3, k1, k2, k3, nkstot, ip_xk => xk, ip_wk => wk,                          &
                                 ion_dynamics, upscale, remove_rigid_rot, refold_pos, pot_extrapolation,               &
                                 wfc_extrapolation, ion_temperature, tempw, tolp, delta_t, nraise, ip_dt => dt,        &
@@ -106,11 +107,11 @@
   TYPE(dftU_type),POINTER                  ::  dftU_
   TYPE(vdW_type),POINTER                   ::  vdW_
   REAL(DP),TARGET                          ::  xdm_a1_, xdm_a2_, lond_s6_, lond_rcut_, ts_vdw_econv_thr_,&
-                                               scr_par_, exx_frc_, ecutvcut_, ecut_fock_, loc_thr_     
+                                               scr_par_, exx_frc_, ecutvcut_, ecut_fock_, loc_thr_, cell_factor_tg      
   REAL(DP),POINTER                         ::  xdm_a1_pt=>NULL(), xdm_a2_pt=>NULL(), lond_s6_pt=>NULL(), &
                                                lond_rcut_pt=>NULL(), ts_vdw_econv_thr_pt=>NULL(),& 
                                                ecut_fock_opt=>NULL(), scr_par_opt=>NULL(), exx_frc_opt=>NULL(), &
-                                               ecutvcut_opt=>NULL(), loc_thr_p => NULL()  
+                                               ecutvcut_opt=>NULL(), loc_thr_p => NULL(), cell_factor_pt => NULL()  
   LOGICAL,TARGET                           ::  empirical_vdw, ts_vdw_isolated_, dftd3_threebody_
   LOGICAL,POINTER                          ::  ts_vdw_isolated_pt=>NULL(), dftd3_threebody_pt=>NULL()
   INTEGER,TARGET                           :: dftd3_version_, spin_ns, nbnd_tg, nq1_tg, nq2_tg, nq3_tg  
@@ -408,7 +409,7 @@
                 ip_occupations, tot_charge, ip_nspin, input_occupations=f_inp(:,1) )
      END SELECT    
   ELSE 
-     IF ( tot_magnetization .LT. 0 ) THEN 
+     IF ( tot_magnetization .LT. -9999.0 ) THEN 
         CALL qexsd_init_bands(obj%bands, nbnd_pt, smearing_loc, degauss/e2, ip_occupations, tot_charge, ip_nspin)
      ELSE
         CALL qexsd_init_bands(obj%bands, nbnd_pt, smearing_loc, degauss/e2, ip_occupations, tot_charge, ip_nspin, &
@@ -442,7 +443,8 @@
   END IF
   CALL qexsd_init_electron_control(obj%electron_control, diagonalization, mixing_mode, mixing_beta, conv_thr/e2,         &
                                    mixing_ndim, electron_maxstep, tqr, real_space, tq_smoothing, tbeta_smoothing, diago_thr_init, &
-                                   diago_full_acc, diago_cg_maxiter,  diago_ppcg_maxiter, diago_david_ndim)
+                                   diago_full_acc, diago_cg_maxiter, diago_ppcg_maxiter, diago_david_ndim, &
+                                   diago_rmm_ndim, diago_rmm_conv, diago_gs_nblock)
   !--------------------------------------------------------------------------------------------------------------------------------
   !                                                   K POINTS IBZ ELEMENT
   !------------------------------------------------------------------------------------------------------------------------------ 
@@ -465,8 +467,12 @@
                               ip_dt, bfgs_ndim, trust_radius_min, trust_radius_max, trust_radius_ini, w_1, w_2)
   !--------------------------------------------------------------------------------------------------------------------------------
   !                                                        CELL CONTROL ELEMENT
-  !-------------------------------------------------------------------------------------------------------------------------------
-  CALL qexsd_init_cell_control(obj%cell_control, cell_dynamics, press, wmass, cell_factor, cell_dofree, cb_iforceh)
+  !-----------------------------------------------------------------------------------------------------------------------------
+  IF (cell_factor > 0.d0 ) THEN
+    cell_factor_tg = cell_factor 
+    cell_factor_pt => cell_factor_tg  
+  END IF
+  CALL qexsd_init_cell_control(obj%cell_control, cell_dynamics, press, wmass, cell_factor_pt, cell_dofree, cb_iforceh)
   !---------------------------------------------------------------------------------------------------------------------------------
   !                                SYMMETRY FLAGS
   !------------------------------------------------------------------------------------------------------------------------ 

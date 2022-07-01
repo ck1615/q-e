@@ -90,7 +90,6 @@ qes_write_module.o \
 qes_read_module.o \
 qes_reset_module.o \
 qes_init_module.o \
-qes_read_module.o \
 qes_bcast_module.o \
 qexsd.o   \
 qexsd_copy.o   \
@@ -102,9 +101,10 @@ fox_init_module.o \
 xsf.o \
 wyckoff.o \
 wypos.o \
-zvscal.o 
+zvscal.o \
+wave_gauge.o
 
-# list of subroutines and functions (not modules) previously found in flib/
+# list of subroutines and functions (not modules) previously found in flib/clib
 
 OBJS = \
 atom_weight.o \
@@ -133,7 +133,11 @@ volume.o \
 wgauss.o \
 w0gauss.o \
 w1gauss.o \
-deviatoric.o
+deviatoric.o \
+customize_signals.o \
+qmmm_aux.o \
+sockets.o \
+stack.o
 
 # GPU versions of modules
 MODULES += \

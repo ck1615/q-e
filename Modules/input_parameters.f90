@@ -274,7 +274,6 @@ MODULE input_parameters
         !! \(\text{large}\): QE tries to use (when implemented) algorithms using more memory
         !! to enhance performance.
         DATA memory_allowed / 'small', 'default', 'large' /
-          
 
         !
         CHARACTER(len=256) :: input_xml_schema_file = ' '
@@ -327,8 +326,8 @@ MODULE input_parameters
         REAL(DP):: tot_charge = 0.0_DP
         !! total system charge
 
-        REAL(DP) :: tot_magnetization = -1.0_DP
-        !! majority - minority spin. A value < 0 means unspecified
+        REAL(DP) :: tot_magnetization = -10000.0_DP
+        !! majority - minority spin. A value = -10000 means unspecified
 
         REAL(DP) :: ecutwfc = 0.0_DP
         !! energy cutoff for wave functions in k-space ( in Rydberg ).
@@ -422,6 +421,10 @@ MODULE input_parameters
         LOGICAL :: reserv_back(nsx) = .FALSE.
         LOGICAL :: hub_pot_fix = .FALSE.
         LOGICAL :: backall(nsx) = .FALSE.
+
+          ! For linking to DMFT calculations
+        LOGICAL :: dmft = .FALSE.
+        CHARACTER(len=256) :: dmft_prefix = 'dmft_prefix'
 
         LOGICAL :: la2F = .false.
           ! For electron-phonon calculations
@@ -642,7 +645,7 @@ MODULE input_parameters
              Hubbard_U, Hubbard_U_back, Hubbard_J, Hubbard_alpha,             &
              Hubbard_alpha_back, Hubbard_J0, Hubbard_beta,                    &
              hub_pot_fix, Hubbard_V, Hubbard_parameters,                      &
-             backall, lback, l1back, reserv, reserv_back,                     &
+             backall, lback, l1back, reserv, reserv_back, dmft, dmft_prefix,  &
              edir, emaxpos, eopreg, eamp, smearing, starting_ns_eigenvalue,   &
              U_projection_type, input_dft, la2F, assume_isolated,             &
              nqx1, nqx2, nqx3, ecutfock, localization_thr, scdm, ace,         &
@@ -862,8 +865,8 @@ MODULE input_parameters
         !! dimension of mixing subspace. Used in PWscf only.
 
         CHARACTER(len=80) :: diagonalization = 'david'
-        !! diagonalization = 'david', 'cg' or 'ppcg'.
-        !! Algorithm used by PWscf for iterative diagonalization.
+        !! diagonalization = 'david', 'cg', 'ppcg', 'paro' or 'rmm'
+        !! algorithm used by PWscf for iterative diagonalization
 
         REAL(DP) :: diago_thr_init = 0.0_DP
         !! convergence threshold for the first iterative diagonalization.
@@ -881,6 +884,19 @@ MODULE input_parameters
         INTEGER :: diago_david_ndim = 4
         !! dimension of the subspace used in Davidson diagonalization
         !! used in PWscf only.
+
+        INTEGER :: diago_rmm_ndim = 4
+          ! dimension of the subspace used in RMM-DIIS diagonalization
+          ! used only in PWscf
+
+        LOGICAL :: diago_rmm_conv = .false.
+          ! if .TRUE., RMM-DIIS is performed up to converge
+          ! if .FALSE., RMM-DIIS is performed only once
+          ! used only in PWscf
+
+        INTEGER :: diago_gs_nblock = 16
+          ! blocking size in Gram-Schmidt orthogonalization
+          ! used only in PWscf
 
         LOGICAL :: diago_full_acc = .false.
 
@@ -931,6 +947,10 @@ MODULE input_parameters
 
         LOGICAL :: tcg = .true.
         !! if TRUE perform in cpv conjugate gradient minimization of electron energy
+
+        LOGICAL :: pre_state = .false.
+        !! if TRUE, in CP's conjugate gradient routine, precondition each band
+        !! with its kinetic energy (see CPV/src/cg_sub.f90)
 
         INTEGER :: maxiter = 100
         !! max number of conjugate gradient iterations
@@ -1013,7 +1033,8 @@ MODULE input_parameters
           diis_nchmix, diis_nrot, diis_rothr, diis_ethr, diis_chguess, &
           mixing_mode, mixing_beta, mixing_ndim, mixing_fixed_ns,      &
           tqr, tq_smoothing, tbeta_smoothing,                          &
-          diago_cg_maxiter, diago_david_ndim, diagonalization,         &
+          diago_cg_maxiter, diago_david_ndim, diago_rmm_ndim,          &
+          diago_rmm_conv, diago_gs_nblock, diagonalization,            &
           startingpot, startingwfc , conv_thr,                         &
           adaptive_thr, conv_thr_init, conv_thr_multi,                 &
           diago_thr_init, n_inner, fermi_energy, rotmass, occmass,     &
@@ -1023,7 +1044,7 @@ MODULE input_parameters
           occupation_constraints, niter_cg_restart,                    &
           niter_cold_restart, lambda_cold, efield_cart, real_space,    &
           tcpbo,emass_emin, emass_cutoff_emin, electron_damping_emin,  &
-          dt_emin, efield_phase
+          dt_emin, efield_phase, pre_state
 
 !
 !=----------------------------------------------------------------------------=!
@@ -1033,11 +1054,11 @@ MODULE input_parameters
 
         CHARACTER(len=80) :: ion_dynamics = 'none'
         !! set how ions should be moved
-        CHARACTER(len=80) :: ion_dynamics_allowed(10)
+        CHARACTER(len=80) :: ion_dynamics_allowed(11)
         !! allowed options for ion\_dynamics.
         DATA ion_dynamics_allowed / 'none', 'sd', 'cg', 'langevin', &
                                     'damp', 'verlet', 'bfgs', 'beeman',& 
-                                    'langevin-smc', 'ipi' /
+                                    'langevin-smc', 'ipi', 'fire' /
 
         REAL(DP) :: ion_radius(nsx) = 0.5_DP
         !! pseudo-atomic radius of the i-th atomic species (CP only).
@@ -1176,6 +1197,17 @@ MODULE input_parameters
         REAL(DP)  :: w_2 = 0.5_DP
 
         !
+        ! Parameters for minimization with the FIRE algorithm   
+        !
+        INTEGER  :: fire_nmin = 5 ! minimum number of steps for time step increase 
+        REAL(DP) :: fire_f_inc = 1.1_DP ! factor for time step increase  
+        REAL(DP) :: fire_f_dec = 0.5_DP ! factor for time step decrease
+        REAL(DP) :: fire_alpha_init = 0.2_DP ! initial value of mixing factor
+        REAL(DP) :: fire_falpha = 0.99_DP ! modify the mixing factor
+        REAL(DP) :: fire_dtmax = 10.0_DP ! maximum time step; calculated as dtmax = fire_dtmax*dt 
+        !
+
+        !
         NAMELIST / ions / ion_dynamics, iesr, ion_radius, ion_damping,         &
                           ion_positions, ion_velocities, ion_temperature,      &
                           tempw, fnosep, nhgrp, fnhscl, nhpcl, nhptyp, ndega, tranp,   &
@@ -1183,7 +1215,10 @@ MODULE input_parameters
                           refold_pos, upscale, delta_t, pot_extrapolation,     &
                           wfc_extrapolation, nraise, remove_rigid_rot,         &
                           trust_radius_max, trust_radius_min,                  &
-                          trust_radius_ini, w_1, w_2, bfgs_ndim
+                          trust_radius_ini, w_1, w_2, bfgs_ndim,               &
+                          fire_nmin, fire_f_inc, fire_f_dec, fire_alpha_init,  &
+                          fire_falpha, fire_dtmax 
+
 
 
 !=----------------------------------------------------------------------------=!
